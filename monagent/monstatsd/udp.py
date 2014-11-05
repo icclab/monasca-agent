@@ -104,7 +104,7 @@ class Server(object):
         raw_value = metadata[0]
         metric_type = metadata[1]
 
-        if metric_type == 's':
+        if metric_type == 's' or metric_type = 'l':
             value = raw_value
         else:
             # Try to cast as an int first to avoid precision issues, then as a

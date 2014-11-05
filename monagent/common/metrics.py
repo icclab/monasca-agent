@@ -23,6 +23,7 @@ class MetricTypes(object):
     GAUGE = 'gauge'
     COUNTER = 'counter'
     RATE = 'rate'
+    LOG = 'log'
 
 
 class Metric(object):
@@ -58,6 +59,47 @@ class Gauge(Metric):
         self.timestamp = time()
 
     def sample(self, value, sample_rate, timestamp=None):
+        self.value = value
+        self.last_sample_time = time()
+        self.timestamp = timestamp
+
+    def flush(self, timestamp, interval):
+        if self.value is not None:
+            res = [self.formatter(
+                metric=self.name,
+                timestamp=self.timestamp or timestamp,
+                value=self.value,
+                dimensions=self.dimensions,
+                delegated_tenant=self.delegated_tenant,
+                hostname=self.hostname,
+                device_name=self.device_name,
+                metric_type=MetricTypes.GAUGE,
+                interval=interval,
+            )]
+            self.value = None
+            return res
+
+        return []
+
+
+class Log(Metric):
+
+    """ A metric that tracks a log entry at particular points in time. """
+
+    def __init__(self, formatter, name, dimensions,
+                 hostname, device_name, delegated_tenant = None):
+        self.formatter = formatter
+        self.name = name
+        self.value = None
+        self.dimensions = dimensions
+        self.delegated_tenant = delegated_tenant
+        self.hostname = hostname
+        self.device_name = device_name
+        self.last_sample_time = None
+        self.timestamp = time()
+
+    def sample(self, value, sample_rate, timestamp=None):
+        log.info("Sampling log shit with value %s" % value)
         self.value = value
         self.last_sample_time = time()
         self.timestamp = timestamp
