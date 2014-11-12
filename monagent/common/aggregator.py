@@ -3,7 +3,7 @@
 import logging
 from time import time
 
-from monagent.common.metrics import Gauge, Log, BucketGauge, Counter, Histogram, Measurement, Set, Rate
+from monagent.common.metrics import Gauge, BucketGauge, Counter, Histogram, Measurement, Set, Rate
 
 
 log = logging.getLogger(__name__)
@@ -144,7 +144,6 @@ class MetricsBucketAggregator(Aggregator):
         self.last_flush_cutoff_time = 0
         self.metric_type_to_class = {
             'g': BucketGauge,
-            'l': Log,
             'c': Counter,
             'h': Histogram,
             'ms': Histogram,
@@ -164,7 +163,7 @@ class MetricsBucketAggregator(Aggregator):
             new_dimensions = {}
         else:
             new_dimensions = dimensions.copy()
-        new_dimensions.update({'component': 'monasca-agent', 'service': 'monitoring'})
+	new_dimensions.update({'component': 'monasca-agent', 'service': 'monitoring'})
         context = (name, tuple(new_dimensions.items()), hostname, device_name)
 
         cur_time = time()
@@ -281,7 +280,6 @@ class MetricsAggregator(Aggregator):
         self.metrics = {}
         self.metric_type_to_class = {
             'g': Gauge,
-            'l': Log,
             'c': Counter,
             'h': Histogram,
             'ms': Histogram,
@@ -321,11 +319,6 @@ class MetricsAggregator(Aggregator):
     def gauge(self, name, value, dimensions=None, delegated_tenant=None,
               hostname=None, device_name=None, timestamp=None):
         self.submit_metric(name, value, 'g', dimensions, delegated_tenant,
-                           hostname, device_name, timestamp)
-
-    def log(self, name, value, dimensions=None, delegated_tenant=None,
-              hostname=None, device_name=None, timestamp=None):
-        self.submit_metric(name, value, 'l', dimensions, delegated_tenant,
                            hostname, device_name, timestamp)
 
     def increment(self, name, value=1, dimensions=None, delegated_tenant=None,

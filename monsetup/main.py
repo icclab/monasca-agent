@@ -44,15 +44,21 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Detect running daemons then configure and start the agent.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-u', '--username', help="Keystone username used to post metrics", required=True)
+        '-u', '--username', help="Username used for keystone authentication", required=True)
     parser.add_argument(
-        '-p', '--password', help="Keystone password used to post metrics", required=True)
-    parser.add_argument('--project_name', help="Keystone project/tenant name", required=True)
-    parser.add_argument(
-        '-s', '--service', help="Service this node is associated with.", required=True)
+        '-p', '--password', help="Password used for keystone authentication", required=True)
     parser.add_argument('--keystone_url', help="Keystone url", required=True)
     parser.add_argument('--monasca_url', help="Monasca API url", required=True)
+    parser.add_argument('--insecure', help="Set whether certificates are used for Keystone authentication", required=False, default=False)
+    parser.add_argument('--project_name', help="Project name for keystone authentication", required=False, default='')
+    parser.add_argument('--project_domain_id', help="Project domain id for keystone authentication", required=False, default='')
+    parser.add_argument('--project_domain_name', help="Project domain name for keystone authentication", required=False, default='')
+    parser.add_argument('--project_id', help="Keystone project id  for keystone authentication", required=False, default='')
+    parser.add_argument('--ca_file', help="Sets the path to the ca certs file if using certificates" +
+                        "Required only if insecure is set to False", required=False, default='')
     parser.add_argument('--config_dir', help="Configuration directory", default='/etc/monasca/agent')
+    parser.add_argument('--dimensions', help="Additional dimensions to set for all metrics. A comma seperated list " +
+                                             "of name/value pairs, 'name:value,name2:value2'")
     parser.add_argument('--log_dir', help="monasca-agent log directory", default='/var/log/monasca/agent')
     parser.add_argument(
         '--template_dir', help="Alternative template directory", default='/usr/local/share/monasca/agent')
@@ -65,6 +71,7 @@ def main(argv=None):
                                               " which requires the script run as root. Set this to skip that step.",
                         action="store_true")
     parser.add_argument('--user', help="User name to run monasca-agent as", default='monasca-agent')
+    parser.add_argument('-s', '--service', help="Service this node is associated with, added as a dimension.")
     parser.add_argument('-v', '--verbose', help="Verbose Output", action="store_true")
     args = parser.parse_args()
 
@@ -100,6 +107,12 @@ def main(argv=None):
     agent_conf_path = os.path.join(args.config_dir, 'agent.conf')
     with open(os.path.join(args.template_dir, 'agent.conf.template'), 'r') as agent_template:
         with open(agent_conf_path, 'w') as agent_conf:
+            # Join service in with the dimensions
+            if args.service is not None:
+                if args.dimensions is None:
+                    args.dimensions = 'service:' + args.service
+                else:
+                    args.dimensions = ','.join([args.dimensions, 'service:' + args.service])
             agent_conf.write(agent_template.read().format(args=args, hostname=socket.getfqdn()))
     os.chown(agent_conf_path, 0, gid)
     os.chmod(agent_conf_path, 0o640)
